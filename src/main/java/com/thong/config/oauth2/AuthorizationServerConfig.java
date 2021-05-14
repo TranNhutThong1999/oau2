@@ -2,6 +2,8 @@ package com.thong.config.oauth2;
 
 import java.util.Arrays;
 
+import javax.sql.DataSource;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,11 +21,12 @@ import org.springframework.security.oauth2.provider.token.DefaultTokenServices;
 import org.springframework.security.oauth2.provider.token.TokenEnhancer;
 import org.springframework.security.oauth2.provider.token.TokenEnhancerChain;
 import org.springframework.security.oauth2.provider.token.TokenStore;
+import org.springframework.security.oauth2.provider.token.store.JdbcTokenStore;
 import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenConverter;
-import org.springframework.security.oauth2.provider.token.store.JwtTokenStore;
 import org.springframework.security.oauth2.provider.token.store.KeyStoreKeyFactory;
 
 import com.thong.Security.CustomUserDetail;
+import com.thong.Security.JdbcTokenStores;
 
 @Configuration
 @EnableAuthorizationServer
@@ -36,6 +39,9 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 
 	@Autowired
 	private CustomUserDetail customUserDetail;
+	
+	@Autowired
+	private DataSource dataSource;
 
 	@Override
 	public void configure(AuthorizationServerSecurityConfigurer security) throws Exception {
@@ -46,16 +52,17 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 
 	@Override
 	public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
-		clients.inMemory().withClient("client").authorizedGrantTypes("password").scopes("read", "write")
+		clients.inMemory().withClient("client").authorizedGrantTypes("password","client_credentials","refresh_token").scopes("read", "write")
 				.autoApprove(true).secret(passwordEncoder.encode("123456")).accessTokenValiditySeconds(500);
 	}
 
 	@Override
 	public void configure(AuthorizationServerEndpointsConfigurer endpoints) {
 		TokenEnhancerChain tokenEnhancerChain = new TokenEnhancerChain();
-		tokenEnhancerChain.setTokenEnhancers(Arrays.asList(accessTokenConverter(), tokenEnhancer()));
-		endpoints.accessTokenConverter(accessTokenConverter()).userDetailsService(customUserDetail)
-				.authenticationManager(authenticationManager).tokenEnhancer(tokenEnhancerChain);
+		tokenEnhancerChain.setTokenEnhancers(Arrays.asList( tokenEnhancer()));
+		endpoints.userDetailsService(customUserDetail).tokenStore(tokenStore()).reuseRefreshTokens(false)
+				.authenticationManager(authenticationManager);
+		
 	}
 
 	@Bean
@@ -74,7 +81,8 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 
 	@Bean
 	public TokenStore tokenStore() {
-		return new JwtTokenStore(accessTokenConverter());
+		return new JdbcTokenStores(dataSource);
+		//return new JwtTokenStore(accessTokenConverter());
 	}
 
 	@Bean

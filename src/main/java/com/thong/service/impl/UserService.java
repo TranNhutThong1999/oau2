@@ -76,7 +76,7 @@ public class UserService implements IUserService {
 		User user = userConverter.toEntity(u);
 		user.setActive(false);
 		user.setNonBlock(true);
-		Role role = roleService.findOneByName("user");
+		Role role = roleService.findOneByName("ROLE_USER");
 		List<Role> r = new ArrayList<Role>();
 		r.add(role);
 		user.setRoles(r);

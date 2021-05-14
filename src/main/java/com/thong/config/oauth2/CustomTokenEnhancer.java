@@ -13,9 +13,10 @@ import com.thong.dto.UserDTO;
 import com.thong.exception.UserNotFoundException;
 import com.thong.service.IUserService;
 
-public class CustomTokenEnhancer implements TokenEnhancer{
+public class CustomTokenEnhancer implements TokenEnhancer {
 	@Autowired
 	private IUserService userService;
+
 	@Override
 	public OAuth2AccessToken enhance(OAuth2AccessToken accessToken, OAuth2Authentication authentication) {
 		// TODO Auto-generated method stub
@@ -23,6 +24,7 @@ public class CustomTokenEnhancer implements TokenEnhancer{
 		try {
 			UserDTO u = userService.findOneByUserName(authentication.getName());
 			additionalInfo.put("user", u);
+			// System.out.println("Refresh token: "+ accessToken.getRefreshToken());
 		} catch (UserNotFoundException e) {
 		}
 		((DefaultOAuth2AccessToken) accessToken).setAdditionalInformation(additionalInfo);
